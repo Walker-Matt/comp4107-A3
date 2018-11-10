@@ -1,8 +1,9 @@
 import numpy as np
 import tensorflow as tf
+import matplotlib.pyplot as plt
 import os.path as path
 from sklearn.datasets import fetch_mldata
-
+#
 #Getting the raw data from the database
 datafile = "mnist-original.mat"
 if(not path.isfile(datafile)):
@@ -20,6 +21,14 @@ if(not path.isfile(datafile)):
             f.write(content)
         mnist_raw = loadmat(mnist_path)
         print("Success!")
+        
+#Used to display images throughout
+def display(data, label):
+    pixels = np.array(data, dtype='uint8')
+    pixels = pixels.reshape((28, 28))
+    plt.title(label)
+    plt.imshow(pixels, cmap='Greys')
+    plt.show()
     
 #Creating the subsets
 mnist = {"data": mnist_raw["data"].T,"labels": mnist_raw["label"][0]}
@@ -30,4 +39,9 @@ fives_labels = mnist["labels"][30596:36017]
 
 trX = np.concatenate((ones, fives))
 trY = np.append(ones_labels, fives_labels)
-
+    
+#Hopfield network can only store about 0.15N patterns
+#0.15 * number of neurons = 0.15 * 784 = 117.6 ~ 118
+trainNum = 118
+testNum = len(trX) - 118
+neuronNum = 784
