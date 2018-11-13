@@ -8,6 +8,7 @@ from sklearn.datasets import fetch_mldata
 datafile = "mnist-original.mat"
 if(not path.isfile(datafile)):
     try:
+        print("Downloading MNIST data from mldata.org")
         mnist = fetch_mldata('MNIST original')
     except: #Implemented a work around since mldata.org is down
         print("Could not download MNIST data from mldata.org, trying alternative...")
