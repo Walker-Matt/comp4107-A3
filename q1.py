@@ -37,11 +37,16 @@ fives = mnist["data"][30596:36017]
 ones_labels = mnist["labels"][5923:12664]
 fives_labels = mnist["labels"][30596:36017]
 
-trX = np.concatenate((ones, fives))
-trY = np.append(ones_labels, fives_labels)
+data = np.concatenate((ones, fives))
+labels = np.append(ones_labels, fives_labels)
     
 #Hopfield network can only store about 0.15N patterns
 #0.15 * number of neurons = 0.15 * 784 = 117.6 ~ 118
-trainNum = 118
-testNum = len(trX) - 118
+trainMax = 118
+testMax = len(data) - 118
 neuronNum = 784
+
+#Generate training and testing data/labels
+def generate(num):
+    indexes = np.random.uniform(low=0, high=len(data), size=num)
+    
