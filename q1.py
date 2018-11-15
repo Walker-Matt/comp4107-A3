@@ -56,8 +56,8 @@ labels = np.append(ones_labels, fives_labels)
     
 #Hopfield network can only store about 0.15N patterns
 #0.15 * number of neurons = 0.15 * 784 = 117.6 ~ 118
-trainMax = 118
-testMax = 1000
+trainNum = 4
+testNum = 100
 neuronNum = 784
 
 steps = 10 #Reconstructs test data this many times
@@ -65,9 +65,9 @@ steps = 10 #Reconstructs test data this many times
 #Generate training and testing data/labels
 def generate(num):
     indexes = random.sample(range(len(data)), num)
-    return data[indexes[:trainMax]], labels[indexes[:trainMax]], data[indexes[trainMax:]], labels[indexes[trainMax:]]
+    return data[indexes[:trainNum]], labels[indexes[:trainNum]], data[indexes[trainNum:]], labels[indexes[trainNum:]]
 
-trainX, trainY, testX, testY = generate(trainMax + testMax)
+trainX, trainY, testX, testY = generate(trainNum + testNum)
 
 def train(neurons, training):
     w = np.zeros([neurons, neurons])
@@ -77,14 +77,22 @@ def train(neurons, training):
         w[diagonal][diagonal] = 0
     return w
 
+def diff(test, predict):
+    same = 0
+    for i in range(len(test)):
+        if(test[i] == predict[i]):
+            same += 1
+    return same / len(test)
+
 def test(weights):
     output = []
-
+    accuracyTotal = 0
     for image in testX:
         predicted = reconstruct(weights, image)
+        accuracyTotal += diff(image, predicted)
         output.append([image, predicted])
     
-    return output
+    return (accuracyTotal / testNum), output
 
 #Reconstruct data from weight matrix
 def reconstruct(weights, data):
@@ -99,14 +107,21 @@ def reconstruct(weights, data):
                 res[i] = -1
     return res
 
-# Train
+#Train
 print("Training the network...")
 weights = train(neuronNum, trainX)
 
-# Test
+#Test
 print("Testing the network...")
-predictImgs = test(weights)
+accuracy, predictImgs = test(weights)
 
+print()
+
+#Print accuracy
+print("Accuracy of the network is %f" % (accuracy * 100), "%")
+
+#Print plotted data
+print("First 10 test and predicted images:")
 for i in range(10):
     display(predictImgs[i][0], "Test")
     display(predictImgs[i][1], "Predicted")
