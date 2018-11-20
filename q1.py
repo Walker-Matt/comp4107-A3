@@ -7,7 +7,12 @@ from sklearn.datasets import fetch_mldata
 #Getting the raw data from the database
 datafile = "mnist-original.mat"
 mldata = True
-if(not path.isfile(datafile)):
+if(path.isfile(datafile)):
+    from scipy.io import loadmat
+    mnist_path = "./" + datafile
+    mnist_raw = loadmat(mnist_path)
+    mldata = False
+else:
     try:
         print("Downloading MNIST data from mldata.org")
         mnist_raw = fetch_mldata('MNIST original')
@@ -32,10 +37,10 @@ def display(data, label):
     plt.title(label)
     plt.imshow(pixels, cmap='gray')
     plt.show()
-    
+
 #Convert mnist data into binary values (1 or -1)
 def convert(data):
-    binary = np.zeros((12162, 784), dtype=np.int)
+    binary = np.zeros((len(data), 784), dtype=np.int)
     for i in range(len(data)):
         for j in range(len(data[i])):
             if(data[i][j] > 0):
@@ -44,89 +49,117 @@ def convert(data):
                 binary[i][j] = -1
     return binary
 
+def convertArray(data):
+    binary = np.zeros((784), dtype=np.int)
+    for i in range(len(data)):
+        if(data[i] > 0):
+            binary[i] = 1
+        else:
+            binary[i] = -1
+    return binary
+
 #Creating the subsets
 if(mldata):
     mnist = {"data": mnist_raw["data"],"labels": mnist_raw["target"]}
 else:
     mnist = {"data": mnist_raw["data"].T,"labels": mnist_raw["label"][0]}
-ones = mnist["data"][5923:12664]
-fives = mnist["data"][30596:36017]
+    
+print("Converting mnist data to binary...")
+ones = convert(mnist["data"][5923:12664])
+fives = convert(mnist["data"][30596:36017])
 ones_labels = mnist["labels"][5923:12664]
 fives_labels = mnist["labels"][30596:36017]
 
-data = np.concatenate((ones, fives))
-print("Converting mnist data to binary...")
-data = convert(data)
-labels = np.append(ones_labels, fives_labels)
-    
-#Hopfield network can only store about 0.15N patterns
-#0.15 * number of neurons = 0.15 * 784 = 117.6 ~ 118
-trainNum = 4
+#Ideal training images
+training_ones = [99, 72, 96, 90, 21, 82, 54, 31, 47, 86]
+training_fives = [99, 94, 93, 92, 89, 86, 83, 79, 74, 70]
+
 testNum = 100
 neuronNum = 784
 
-steps = 10 #Reconstructs test data this many times
-
-#Generate training and testing data/labels
-def generate(num):
-    indexes = random.sample(range(len(data)), num)
-    return data[indexes[:trainNum]], labels[indexes[:trainNum]], data[indexes[trainNum:]], labels[indexes[trainNum:]]
-
-trainX, trainY, testX, testY = generate(trainNum + testNum)
-
-def train(neurons, training):
-    w = np.zeros([neurons, neurons])
-    for data in training:
-        w += np.outer(data, data)
-    for diagonal in range(neurons):
-        w[diagonal][diagonal] = 0
-    return w
-
-def diff(test, predict):
-    same = 0
-    for i in range(len(test)):
-        if(test[i] == predict[i]):
-            same += 1
-    return same / len(test)
-
-def test(weights):
-    output = []
-    accuracyTotal = 0
-    for image in testX:
-        predicted = reconstruct(weights, image)
-        accuracyTotal += diff(image, predicted)
-        output.append([image, predicted])
+testOnes = np.array([], dtype=int)
+testFives = np.array([], dtype=int)
+for i in range(testNum):
+    one_pos = random.randint(0, len(ones))
+    while(np.isin(one_pos,training_ones)):
+       one_pos = random.randint(0, len(ones))
     
-    return (accuracyTotal / testNum), output
+    five_pos = random.randint(0, len(fives))
+    while(np.isin(five_pos,training_fives)):
+        five_pos = random.randint(0, len(fives))
+        
+    testOnes = np.append(testOnes, one_pos)
+    testFives = np.append(testFives, five_pos)
 
-#Reconstruct data from weight matrix
-def reconstruct(weights, data):
-    res = np.array(data)
-
-    for _ in range(steps):
-        for i in range(len(res)):
-            raw_v = np.dot(weights[i], res)
-            if raw_v > 0:
-                res[i] = 1
-            else:
-                res[i] = -1
-    return res
-
-#Train
-print("Training the network...")
-weights = train(neuronNum, trainX)
-
-#Test
-print("Testing the network...")
-accuracy, predictImgs = test(weights)
-
-print()
-
-#Print accuracy
-print("Accuracy of the network is %f" % (accuracy * 100), "%")
-
-#Print plotted data
-print("First 10 test and predicted images:")
-for i in range(10):
-    display(predictImgs[i][0], "Test")
-    display(predictImgs[i][1], "Predicted")
+#Hopfield network can only store about 0.15N patterns
+#0.15 * number of neurons = 0.15 * 784 = 117.6 ~ 118
+for trainNum in range(1,6):       
+    training = []
+    for i in range(trainNum):
+        training.append(ones[training_ones[i]])
+        training.append(fives[training_fives[i]])
+        
+    def train(neurons, training):
+        w = np.zeros([neurons, neurons])
+        numTrain = len(training)
+        for i in range(numTrain):
+            w += np.outer(training[i], training[i])
+        w -= (np.identity(neuronNum)*numTrain)
+        return w
+    
+    def diff(test, predict):
+        same = 0
+        for i in range(len(test)):
+            if(test[i] == predict[i]):
+                same += 1
+        return same / len(test)
+    
+    #Reconstruct data from weight matrix
+    def reconstruct(weights, data):
+        prev = np.zeros((neuronNum))
+        res = np.array(data)
+        steps = 0
+        while(not np.array_equal(prev,res) and steps < 10): #Runs until stable
+            prev = np.array(res)
+            active = np.dot(weights, res)
+            res = convertArray(active)
+            steps += 1
+        return res
+    
+    #Train
+    print("Training the network...")
+    weights = train(neuronNum, training)
+    
+    one_patterns = []
+    five_patterns = []
+    for i in range(trainNum*2):
+        pattern = reconstruct(weights, training[i])
+        if((i % 2) == 0):
+            one_patterns.append(pattern)
+        else:
+            five_patterns.append(pattern)
+    
+    print("Testing the network...")
+    correct = 0
+    for i in range(testNum):
+        predictedOne = reconstruct(weights, ones[testOnes[i]])
+        predictedFive = reconstruct(weights, fives[testFives[i]])
+    
+        for j in range(len(one_patterns)):
+            if(np.array_equal(predictedOne, one_patterns[j])):
+                correct += 1
+                break
+        for j in range(len(five_patterns)):
+            if(np.array_equal(predictedFive, five_patterns[j])):
+                correct += 1
+                break
+    
+    percentage = 100*correct/(testNum*2)
+    
+    print("TrainNum: ", trainNum, "  Accuracy: ", percentage, "%")
+    
+    for i in range(trainNum):
+        display(one_patterns[i], 1)
+        
+    for i in range(trainNum):
+        display(five_patterns[i], 5)
