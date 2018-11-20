@@ -7,16 +7,24 @@ Created on Tue Nov 13 13:30:08 2018
 
 from sklearn.cluster import KMeans
 import numpy as np
-import tensorflow as tf
 import matplotlib.pyplot as plt
 import os.path as path
 from sklearn.datasets import fetch_mldata
+import random
+from matplotlib.pyplot import figure
 
 ##Getting the raw data from the database
 datafile = "mnist-original.mat"
-if(not path.isfile(datafile)):
+mldata = True
+if(path.isfile(datafile)):
+    from scipy.io import loadmat
+    mnist_path = "./" + datafile
+    mnist_raw = loadmat(mnist_path)
+    mldata = False
+else:
     try:
-        mnist = fetch_mldata('MNIST original')
+        print("Downloading MNIST data from mldata.org")
+        mnist_raw = fetch_mldata('MNIST original')
     except: #Implemented a work around since mldata.org is down
         print("Could not download MNIST data from mldata.org, trying alternative...")
         from six.moves import urllib
@@ -29,7 +37,9 @@ if(not path.isfile(datafile)):
             f.write(content)
         mnist_raw = loadmat(mnist_path)
         print("Success!")
-        
+        mldata = False
+       
+
 #Used to display images throughout
 def display(data, label):
     pixels = np.array(data, dtype='uint8')
@@ -39,61 +49,35 @@ def display(data, label):
     plt.show()
     
 #Creating the subsets
-mnist = {"data": mnist_raw["data"].T,"labels": mnist_raw["label"][0]}
+if(mldata):
+    mnist = {"data": mnist_raw["data"],"labels": mnist_raw["target"]}
+else:
+    mnist = {"data": mnist_raw["data"].T,"labels": mnist_raw["label"][0]}
 data = mnist['data']
 labels = mnist['labels']
 
-dist = np.array([])
+numImages = 1000
+indices = random.sample(range(len(data)), numImages)
 
-for i in range(9,14):
-    kmeans = KMeans(n_clusters=i, random_state=0).fit(data)
+dist = np.array([])
+kVals = np.arange(490,1000,50)
+
+for k in kVals:
+    kmeans = KMeans(n_clusters=k, random_state=0).fit(data[indices])
     dist = np.append(dist,kmeans.inertia_)
+
+plt.figure()
+figure(num=None, figsize=(8, 6), dpi=80, facecolor='w', edgecolor='k')
+plt.plot(kVals, dist)
+title = "K-Mean Cluster"
+plt.title(title)
+plt.xlabel("K")
+plt.ylabel("Distance")
+plt.grid()
+plt.show()
 
 #### RBG Network
 #def gaussAct(x):
 #    b = 0.5
 #    c = 
 #    return tf.math.exp(-0.5*(x-))
-
-def init_weights(shape):
-    return tf.Variable(tf.random_normal(shape, stddev=0.01))
-
-def model(X, w_h1, w_o):
-    h = tf.nn.gaussian(X)
-    #h1 = tf.nn.sigmoid(tf.matmul(X, w_h1)) # this is a basic mlp, think 2 stacked logistic regressions    
-    return tf.matmul(h, w_o) # note that we dont take the softmax at the end because our cost fn does that for us
-
-
-mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
-trX, trY, teX, teY = mnist.train.images, mnist.train.labels, mnist.test.images, mnist.test.labels
-
-size_h1 = tf.constant(625, dtype=tf.int32)
-size_h2 = tf.constant(300, dtype=tf.int32)
-
-X = tf.placeholder("float", [None, 784])
-Y = tf.placeholder("float", [None, 10])
-
-w_h1 = init_weights([784, size_h1]) # create symbolic variables
-w_h2 = init_weights([size_h1, size_h2])
-w_o = init_weights([size_h2, 10])
-
-py_x = model(X, w_h1, w_h2, w_o)
-
-cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=py_x, labels=Y)) # compute costs
-train_op = tf.train.GradientDescentOptimizer(0.05).minimize(cost) # construct an optimizer
-predict_op = tf.argmax(py_x, 1)
-
-saver = tf.train.Saver()
-
-# Launch the graph in a session
-with tf.Session() as sess:
-    # you need to initialize all variables
-    tf.global_variables_initializer().run()
-    print(range(0,len(trX),128))
-    for i in range(3):
-        for start, end in zip(range(0, len(trX), 128), range(128, len(trX)+1, 128)):
-            sess.run(train_op, feed_dict={X: trX[start:end], Y: trY[start:end]})
-        pred = sess.run(py_x, feed_dict={X: trX})
-        print(i, np.mean(np.argmax(teY, axis=1) == sess.run(predict_op, feed_dict={X: teX})))
-    saver.save(sess,"mlp/session.ckpt")
-    
