@@ -3,13 +3,14 @@ import random
 import matplotlib.pyplot as plt
 import os.path as path
 from sklearn.datasets import fetch_mldata
-#
+
 #Getting the raw data from the database
 datafile = "mnist-original.mat"
+mldata = True
 if(not path.isfile(datafile)):
     try:
         print("Downloading MNIST data from mldata.org")
-        mnist = fetch_mldata('MNIST original')
+        mnist_raw = fetch_mldata('MNIST original')
     except: #Implemented a work around since mldata.org is down
         print("Could not download MNIST data from mldata.org, trying alternative...")
         from six.moves import urllib
@@ -22,6 +23,7 @@ if(not path.isfile(datafile)):
             f.write(content)
         mnist_raw = loadmat(mnist_path)
         print("Success!")
+        mldata = False
         
 #Used to display images throughout
 def display(data, label):
@@ -41,9 +43,12 @@ def convert(data):
             else:
                 binary[i][j] = -1
     return binary
-    
+
 #Creating the subsets
-mnist = {"data": mnist_raw["data"].T,"labels": mnist_raw["label"][0]}
+if(mldata):
+    mnist = {"data": mnist_raw["data"],"labels": mnist_raw["target"]}
+else:
+    mnist = {"data": mnist_raw["data"].T,"labels": mnist_raw["label"][0]}
 ones = mnist["data"][5923:12664]
 fives = mnist["data"][30596:36017]
 ones_labels = mnist["labels"][5923:12664]
@@ -125,4 +130,3 @@ print("First 10 test and predicted images:")
 for i in range(10):
     display(predictImgs[i][0], "Test")
     display(predictImgs[i][1], "Predicted")
-    
