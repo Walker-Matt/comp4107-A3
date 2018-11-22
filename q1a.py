@@ -70,27 +70,6 @@ fives = convert(mnist["data"][30596:36017])
 ones_labels = mnist["labels"][5923:12664]
 fives_labels = mnist["labels"][30596:36017]
 
-#Ideal training images
-training_ones = [99, 72, 96, 90, 21, 82, 54, 31, 47, 86]
-training_fives = [99, 94, 93, 92, 89, 86, 83, 79, 74, 70]
-
-testNum = 100
-neuronNum = 784
-
-testOnes = np.array([], dtype=int)
-testFives = np.array([], dtype=int)
-for i in range(testNum):
-    one_pos = random.randint(0, len(ones))
-    while(np.isin(one_pos,training_ones)):
-       one_pos = random.randint(0, len(ones))
-    
-    five_pos = random.randint(0, len(fives))
-    while(np.isin(five_pos,training_fives)):
-        five_pos = random.randint(0, len(fives))
-        
-    testOnes = np.append(testOnes, one_pos)
-    testFives = np.append(testFives, five_pos)
-
 def train(neurons, training):
     w = np.zeros([neurons, neurons])
     numTrain = len(training)
@@ -118,48 +97,79 @@ def reconstruct(weights, data):
         steps += 1
     return res
 
+# Hand-selected Ideal training images
+training_ones = [99, 72, 96, 90, 21, 82, 54, 31, 47, 86]
+training_fives = [99, 94, 93, 92, 89, 86, 83, 79, 74, 70]
+
+testNum = 200
+maxTrain = 6
+neuronNum = 784
+
+testOnes = np.array([], dtype=int)
+testFives = np.array([], dtype=int)
+for i in range(testNum):
+    rand = np.random.choice([0,1])
+    if (rand == 0):
+        one_pos = random.randint(0, len(ones))
+        while(np.isin(one_pos,training_ones)): #ensures test image isn't also a training image
+           one_pos = random.randint(0, len(ones))
+        testOnes = np.append(testOnes, one_pos)
+    else:
+        five_pos = random.randint(0, len(fives))
+        while(np.isin(five_pos,training_fives)): #ensures test image isn't also a training image
+            five_pos = random.randint(0, len(fives))
+        testFives = np.append(testFives, five_pos)
+
 #Hopfield network can only store about 0.15N patterns
 #0.15 * number of neurons = 0.15 * 784 = 117.6 ~ 118
-for trainNum in range(1,6):       
+for trainNum in range(1,maxTrain):       
+    #Train
+    print("Training the network...")
     training = []
     for i in range(trainNum):
         training.append(ones[training_ones[i]])
         training.append(fives[training_fives[i]])
-
-    #Train
-    print("Training the network...")
+        
+    #weight assignment using training images
     weights = train(neuronNum, training)
     
-    one_patterns = []
-    five_patterns = []
-    for i in range(trainNum*2):
-        pattern = reconstruct(weights, training[i])
-        if((i % 2) == 0):
-            one_patterns.append(pattern)
-        else:
-            five_patterns.append(pattern)
+#    one_patterns = []
+#    five_patterns = []
+#    for i in range(trainNum*2):
+#        pattern = reconstruct(weights, training[i])
+#        if((i % 2) == 0):
+#            one_patterns.append(pattern)
+#        else:
+#            five_patterns.append(pattern)
     
     print("Testing the network...")
     correct = 0
-    for i in range(testNum):
+    for i in range(len(testOnes)):
         predictedOne = reconstruct(weights, ones[testOnes[i]])
-        predictedFive = reconstruct(weights, fives[testFives[i]])
+        normValsOnes = np.array([])
+        for t in range(len(training)):
+            norm = np.linalg.norm(training[t]-predictedOne, ord=2)
+            normValsOnes = np.append(normValsOnes,norm)
+        minPos = np.argmin(normValsOnes)
+        if(minPos%2==0):
+            correct += 1
     
-        for j in range(len(one_patterns)):
-            if(np.array_equal(predictedOne, one_patterns[j])):
-                correct += 1
-                break
-        for j in range(len(five_patterns)):
-            if(np.array_equal(predictedFive, five_patterns[j])):
-                correct += 1
-                break
+    for i in range(len(testFives)):
+        predictedFive = reconstruct(weights, ones[testFives[i]])
+        normValsFives = np.array([])
+        for t in range(len(training)):
+            norm = np.linalg.norm(training[t]-predictedFive, ord=2)
+            normValsFives = np.append(normValsFives,norm)
+            minPos = np.argmin(normValsFives)
+        if(minPos%2==1):
+            correct += 1
     
-    percentage = 100*correct/(testNum*2)
+    percentage = 100*correct/(testNum)
     
     print("TrainNum: ", trainNum, "  Accuracy: ", percentage, "%")
     
-    for i in range(trainNum):
-        display(one_patterns[i], 1)
-        
-    for i in range(trainNum):
-        display(five_patterns[i], 5)
+#    for i in range(trainNum):
+#        display(one_patterns[i], 1)
+#        
+#    for i in range(trainNum):
+#        display(five_patterns[i], 5)
