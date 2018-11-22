@@ -72,7 +72,12 @@ fives_labels = mnist["labels"][30596:36017]
 
 def train(neurons, training):
     w = np.zeros([neurons, neurons])
+    h = np.zeros([neurons, neurons])
     numTrain = len(training)
+    for
+    h = np.outer(w,training[i])
+    w = w + 
+    
     for i in range(numTrain):
         w += np.outer(training[i], training[i])
     w -= (np.identity(neuronNum)*numTrain)
