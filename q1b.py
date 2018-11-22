@@ -3,6 +3,7 @@ import random
 import matplotlib.pyplot as plt
 import os.path as path
 from sklearn.datasets import fetch_mldata
+from matplotlib.pyplot import figure
 
 #Getting the raw data from the database
 datafile = "mnist-original.mat"
@@ -70,6 +71,8 @@ fives = convert(mnist["data"][30596:36017])
 ones_labels = mnist["labels"][5923:12664]
 fives_labels = mnist["labels"][30596:36017]
 
+# similar to algorithm from stack exchange written by Russel Richie
+#https://stats.stackexchange.com/questions/276889/whats-wrong-with-my-algorithm-for-implementing-the-storkey-learning-rule-for-ho
 def train(neurons, training):
     w = np.zeros([neurons, neurons])
     for image in training:
@@ -111,7 +114,7 @@ training_ones = [99, 72, 96, 90, 21, 82, 54, 31, 47, 86]
 training_fives = [99, 94, 93, 92, 89, 86, 83, 79, 74, 70]
 
 testNum = 200
-maxTrain = 10
+maxTrain = 21
 neuronNum = 784
 
 testOnes = np.array([], dtype=int)
@@ -129,6 +132,7 @@ for i in range(testNum):
             five_pos = random.randint(0, len(fives))
         testFives = np.append(testFives, five_pos)
 
+percentages = np.array([])
 #Hopfield network can only store about 0.15N patterns
 #0.15 * number of neurons = 0.15 * 784 = 117.6 ~ 118
 for trainNum in range(1,maxTrain):       
@@ -159,7 +163,7 @@ for trainNum in range(1,maxTrain):
     
     print("Testing the network...")
     correct = 0
-    for i in range(len(testOnes)):
+    for i in range(len(testOnes)-1):
         predictedOne = reconstruct(weights, ones[testOnes[i]])
         normValsOnes = np.array([])
         for t in range(len(training)):
@@ -169,7 +173,7 @@ for trainNum in range(1,maxTrain):
         if(minPos%2==0):
             correct += 1
     
-    for i in range(len(testFives)):
+    for i in range(len(testFives)-1):
         predictedFive = reconstruct(weights, fives[testFives[i]])
         normValsFives = np.array([])
         for t in range(len(training)):
@@ -179,9 +183,22 @@ for trainNum in range(1,maxTrain):
         if(minPos%2==1):
             correct += 1
             
-    percentage = 100*correct/(testNum)
+    accuracy = 100*correct/(testNum)
+    percentages = np.append(percentages,accuracy)
     
-    print("TrainNum: ", trainNum, "  Accuracy: ", percentage, "%")
+    print("TrainNum: ", trainNum, "  Accuracy: ", accuracy, "%")
+    
+xlabel = np.arange(1,maxTrain)
+plt.figure()
+figure(num=None, figsize=(8, 6), dpi=80, facecolor='w', edgecolor='k')
+plt.plot(xlabel, percentages)
+title = "Accuracy vs Number of Training Images"
+plt.title(title)
+plt.xlabel("Num Images")
+plt.ylabel("Accuracy")
+plt.xticks(xlabel)
+plt.grid()
+plt.show()
     
 #    for i in range(trainNum):
 #        display(one_patterns[i], 1)

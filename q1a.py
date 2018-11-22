@@ -3,6 +3,7 @@ import random
 import matplotlib.pyplot as plt
 import os.path as path
 from sklearn.datasets import fetch_mldata
+from matplotlib.pyplot import figure
 
 #Getting the raw data from the database
 datafile = "mnist-original.mat"
@@ -127,6 +128,7 @@ for i in range(testNum):
             five_pos = random.randint(0, len(fives))
         testFives = np.append(testFives, five_pos)
 
+percentages = np.array([])
 #Hopfield network can only store about 0.15N patterns
 #0.15 * number of neurons = 0.15 * 784 = 117.6 ~ 118
 for trainNum in range(1,maxTrain):       
@@ -170,9 +172,20 @@ for trainNum in range(1,maxTrain):
         if(minPos%2==1):
             correct += 1
             
-    percentage = 100*correct/(testNum)
+    accuracy = 100*correct/(testNum)
+    percentages = np.append(percentages,accuracy)
     
-    print("TrainNum: ", trainNum, "  Accuracy: ", percentage, "%")
+    print("TrainNum: ", trainNum, "  Accuracy: ", accuracy, "%")
+    
+plt.figure()
+figure(num=None, figsize=(8, 6), dpi=80, facecolor='w', edgecolor='k')
+plt.plot(np.arange(1,maxTrain), percentages)
+title = "Accuracy vs Number of Training Images"
+plt.title(title)
+plt.xlabel("Num Images")
+plt.ylabel("Accuracy")
+plt.grid()
+plt.show()
     
 #    for i in range(trainNum):
 #        display(one_patterns[i], 1)
