@@ -72,15 +72,12 @@ fives_labels = mnist["labels"][30596:36017]
 
 def train(neurons, training):
     w = np.zeros([neurons, neurons])
-    h = np.zeros([neurons, neurons])
-    numTrain = len(training)
-    for
-    h = np.outer(w,training[i])
-    w = w + 
-    
-    for i in range(numTrain):
-        w += np.outer(training[i], training[i])
-    w -= (np.identity(neuronNum)*numTrain)
+    for image in training:
+        h = np.outer(image,image) - np.identity(neurons)
+        t1 = w.dot(image)
+        t2 = np.outer(image,t1)
+        t3 = t2.T
+        w = w + (1/neurons)*(h - t2 - t3)
     return w
 
 def diff(test, predict):
@@ -138,9 +135,16 @@ for trainNum in range(1,maxTrain):
     #Train
     print("Training the network...")
     training = []
+    prev = 0
     for i in range(trainNum):
-        training.append(ones[training_ones[i]])
-        training.append(fives[training_fives[i]])
+        if(i % 2 == 0):
+            training.append(ones[training_ones[i-prev]])
+        else:
+            training.append(fives[training_fives[i-prev]])
+        if(i == 0):
+            prev = 1
+        else:
+            prev = i
     #weight assignment using training images
     weights = train(neuronNum, training)
     
