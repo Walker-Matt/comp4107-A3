@@ -94,19 +94,12 @@ def diff(test, predict):
 def reconstruct(weights, data):
     prev = np.zeros((neuronNum))
     res = np.array(data)
-#    print("Original image: ")
-#    display(res,1)
     steps = 0
     while(not np.array_equal(prev,res) and steps < 10): #Runs until stable
         prev = np.array(res)
         active = np.dot(weights, res)
         res = convertArray(active)
-#        print("Prev: ")
-#        display(prev,1)
-#        print("Adjusted: ")
-#        display(res,1)
         steps += 1
-    #print(steps)
     return res
 
 # Hand-selected Ideal training images
@@ -133,11 +126,10 @@ for i in range(testNum):
         testFives = np.append(testFives, five_pos)
 
 percentages = np.array([])
-#Hopfield network can only store about 0.15N patterns
-#0.15 * number of neurons = 0.15 * 784 = 117.6 ~ 118
+
 for trainNum in range(1,maxTrain):       
     #Train
-    print("Training the network...")
+    print("Training the network with", trainNum, "images...")
     training = []
     prev = 0
     for i in range(trainNum):
@@ -152,16 +144,6 @@ for trainNum in range(1,maxTrain):
     #weight assignment using training images
     weights = train(neuronNum, training)
     
-#    one_patterns = []
-#    five_patterns = []
-#    for i in range(trainNum*2):
-#        pattern = reconstruct(weights, training[i])
-#        if((i % 2) == 0):
-#            one_patterns.append(pattern)
-#        else:
-#            five_patterns.append(pattern)
-    
-    print("Testing the network...")
     correct = 0
     for i in range(len(testOnes)-1):
         predictedOne = reconstruct(weights, ones[testOnes[i]])
@@ -186,8 +168,6 @@ for trainNum in range(1,maxTrain):
     accuracy = 100*correct/(testNum)
     percentages = np.append(percentages,accuracy)
     
-    print("TrainNum: ", trainNum, "  Accuracy: ", accuracy, "%")
-    
 xlabel = np.arange(1,maxTrain)
 plt.figure()
 figure(num=None, figsize=(8, 6), dpi=80, facecolor='w', edgecolor='k')
@@ -199,9 +179,3 @@ plt.ylabel("Accuracy")
 plt.xticks(xlabel)
 plt.grid()
 plt.show()
-    
-#    for i in range(trainNum):
-#        display(one_patterns[i], 1)
-#        
-#    for i in range(trainNum):
-#        display(five_patterns[i], 5)
