@@ -58,15 +58,17 @@ training = np.concatenate((ones,fives))
 #plt.plot(training[:,0],training[:,1],'ob',alpha=0.2, markersize=4)
 #fig.set_size_inches(7,7)
 
-mapsize = [30,30]
+mapsize = [28,28]
 som = sompy.SOMFactory.build(training, mapsize, mask=None, mapshape='planar', 
                              lattice='rect', normalization='var', initialization='pca', 
                              neighborhood='gaussian', training='batch', name='sompy')
 som.train(n_job=1, verbose='info')
 v = sompy.mapview.View2DPacked(50, 50, 'test', text_size=8)
 #v.show(som, what='codebook', which_dim=[0,1], cmap=None, col_sz=6)
-v.show(som, what='codebook', cmap=None, col_sz=6)
+#v.show(som, what='codebook', cmap=None, col_sz=6)
 
 #v = sompy.mapview.View2DPacked(2, 2, 'test',text_size=8)  
 cl = som.cluster(n_clusters=2)
-getattr(som, 'cluster_labels')
+weights = getattr(som, 'cluster_labels')
+weights.shape = (28,28)
+print(weights)
