@@ -42,3 +42,8 @@ som.train(n_job=1, verbose='info')
 
 v = sompy.mapview.View2DPacked(50, 50, 'test',text_size=8)  
 v.show(som, what='codebook', which_dim=[0,1], cmap=None, col_sz=6)
+
+v = sompy.mapview.View2DPacked(2, 2, 'test',text_size=8)  
+cl = som.cluster(n_clusters=4)
+getattr(som, 'cluster_labels')
+v.show(som, what='cluster')
