@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Nov 13 13:30:08 2018
-
-@author: brand
-"""
-
 from sklearn.cluster import KMeans
 import numpy as np
 import matplotlib.pyplot as plt
@@ -55,16 +48,15 @@ else:
 data = mnist['data']
 labels = mnist['labels']
 
-numImages = 1000
-indices = random.sample(range(len(data)), numImages)
+numImages = 1000    #number of images to use
+indices = random.sample(range(len(data)), numImages)    #random sample of images
 dist = np.array([])
-kVals = np.arange(10,40,1)
 
-c = 16000000
-
+c = 16000000    #adjusted c constant to determine optimized k value for kmeans
+kVals = np.arange(10,40,1)  #array of k values from 10 to 40
 for k in kVals:
-    kmeans = KMeans(n_clusters=k, random_state=0).fit(data[indices])
-    dist = np.append(dist,kmeans.inertia_ + c*k)
+    kmeans = KMeans(n_clusters=k, random_state=0).fit(data[indices])    #calculates kmeans using training images
+    dist = np.append(dist,kmeans.inertia_ + c*k)    #total distance of points to nearest cluster center
 
 plt.figure()
 figure(num=None, figsize=(8, 6), dpi=80, facecolor='w', edgecolor='k')

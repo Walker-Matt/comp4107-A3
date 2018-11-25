@@ -1,5 +1,4 @@
 import numpy as np
-import random
 import matplotlib.pyplot as plt
 import os.path as path
 from sklearn.datasets import fetch_mldata
@@ -39,38 +38,23 @@ def display(data, label):
     plt.imshow(pixels, cmap='gray')
     plt.show()
 
-#Convert mnist data into binary values (1 or -1)
-def convert(data):
-    binary = np.zeros((len(data), 784), dtype=np.int)
-    for i in range(len(data)):
-        for j in range(len(data[i])):
-            if(data[i][j] > 0):
-                binary[i][j] = 1
-            else:
-                binary[i][j] = -1
-    return binary
-
-def convertArray(data):
-    binary = np.zeros((784), dtype=np.int)
-    for i in range(len(data)):
-        if(data[i] > 0):
-            binary[i] = 1
-        else:
-            binary[i] = -1
-    return binary
-
 #Creating the subsets
 if(mldata):
     mnist = {"data": mnist_raw["data"],"labels": mnist_raw["target"]}
 else:
     mnist = {"data": mnist_raw["data"].T,"labels": mnist_raw["label"][0]}
     
-print("Converting mnist data to binary...")
-ones = convert(mnist["data"][5923:12664])
-fives = convert(mnist["data"][30596:36017])
+#separate images of ones and fives
+ones = mnist["data"][5923:12664]
+fives = mnist["data"][30596:36017]
 ones_labels = mnist["labels"][5923:12664]
 fives_labels = mnist["labels"][30596:36017]
 
+print("Converting mnist data to binary...")
+ones = np.where(ones > 0, 1, -1)
+fives = np.where(fives > 0, 1, -1)
+
+#computes weights for network
 def train(neurons, training):
     w = np.zeros([neurons, neurons])
     numTrain = len(training)
@@ -78,13 +62,6 @@ def train(neurons, training):
         w += np.outer(training[i], training[i])
     w -= (np.identity(neuronNum)*numTrain)
     return w
-
-def diff(test, predict):
-    same = 0
-    for i in range(len(test)):
-        if(test[i] == predict[i]):
-            same += 1
-    return same / len(test)
 
 #Reconstruct data from weight matrix
 def reconstruct(weights, data):
@@ -94,7 +71,7 @@ def reconstruct(weights, data):
     while(not np.array_equal(prev,res) and steps < 10): #Runs until stable
         prev = np.array(res)
         active = np.dot(weights, res)
-        res = convertArray(active)
+        res = np.where(active > 0, 1, -1)  #converts to binary 1 and -1
         steps += 1
     return res
 
@@ -102,7 +79,7 @@ def reconstruct(weights, data):
 training_ones = [99, 72, 96, 90, 21, 82, 54, 31, 47, 86]
 training_fives = [99, 94, 93, 92, 89, 86, 83, 79, 74, 70]
 
-testNum = 200
+testNum = 500
 maxTrain = 10
 neuronNum = 784
 
@@ -111,14 +88,14 @@ testFives = np.array([], dtype=int)
 for i in range(testNum):
     rand = np.random.choice([0,1])
     if (rand == 0):
-        one_pos = random.randint(0, len(ones))
+        one_pos = np.random.randint(0, len(ones))
         while(np.isin(one_pos,training_ones)): #ensures test image isn't also a training image
-           one_pos = random.randint(0, len(ones))
+           one_pos = np.random.randint(0, len(ones))
         testOnes = np.append(testOnes, one_pos)
     else:
-        five_pos = random.randint(0, len(fives))
+        five_pos = np.random.randint(0, len(fives))
         while(np.isin(five_pos,training_fives)): #ensures test image isn't also a training image
-            five_pos = random.randint(0, len(fives))
+            five_pos = np.random.randint(0, len(fives))
         testFives = np.append(testFives, five_pos)
 
 percentages = np.array([])
@@ -130,8 +107,7 @@ for trainNum in range(1,maxTrain):
     for i in range(trainNum):
         training.append(ones[training_ones[i]])
         training.append(fives[training_fives[i]])
-    #weight assignment using training images
-    weights = train(neuronNum, training)
+    weights = train(neuronNum, training)    #weight assignment using training images
     
     correct = 0
     for i in range(len(testOnes)):
@@ -162,7 +138,7 @@ figure(num=None, figsize=(8, 6), dpi=80, facecolor='w', edgecolor='k')
 plt.plot(np.arange(1,maxTrain), percentages)
 title = "Accuracy vs Number of Training Images"
 plt.title(title)
-plt.xlabel("Num Images")
-plt.ylabel("Accuracy")
+plt.xlabel("Number of Training Images")
+plt.ylabel("Accuracy (%)")
 plt.grid()
 plt.show()

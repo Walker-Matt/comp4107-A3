@@ -72,11 +72,9 @@ for i in range(k):
     labs[i] = labels[indices[i*size:(i*size)+size]]
 
 #iterates through different number of hidden layer neurons
-kMean = np.array([15,20,25,30,35,40,45,50])
+kMean = np.array([10,15,20,25,30,35,40,45,50])
 for KM in kMean:
     print("Number of hidden Neurons = ", KM)
-    #used for hidden layer neuron drop-out
-    drop = np.random.choice([0,1], size = (KM,))
     percentages = np.array([])
     clusterCenters = []
     betaVals = []
@@ -119,10 +117,7 @@ for KM in kMean:
         for image in training:
             gauss = np.array([])
             for n in range(KM):
-                if(drop[n]==1):
-                    gauss = np.append(gauss,gaussian(image,clusterCenters[i][n],betaVals[i][n]))
-                else:
-                    gauss = np.append(gauss,0)   #dropout - set node to zero                
+                gauss = np.append(gauss,gaussian(image,clusterCenters[i][n],betaVals[i][n]))
             gaussiansTrain = np.vstack((gaussiansTrain,gauss))
         gaussiansTrain = gaussiansTrain[1:]
         
