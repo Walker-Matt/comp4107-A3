@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import os.path as path
 from sklearn.datasets import fetch_mldata
 from matplotlib.pyplot import figure
+import sompy
+import pandas as pd
 
 #Getting the raw data from the database
 datafile = "mnist-original.mat"
@@ -50,6 +52,21 @@ fives = mnist["data"][30596:36017]
 ones_labels = mnist["labels"][5923:12664]
 fives_labels = mnist["labels"][30596:36017]
 
-print("Converting mnist data to binary...")
-ones = np.where(ones > 0, 1, -1)
-fives = np.where(fives > 0, 1, -1)
+training = np.concatenate((ones,fives))
+
+fig = plt.figure()
+plt.plot(training[:,0],training[:,1],'ob',alpha=0.2, markersize=4)
+fig.set_size_inches(7,7)
+
+mapsize = [30,30]
+som = sompy.SOMFactory.build(training, mapsize, mask=None, mapshape='planar', 
+                             lattice='rect', normalization='var', initialization='pca', 
+                             neighborhood='gaussian', training='batch', name='sompy')
+som.train(n_job=1, verbose='info')
+v = sompy.mapview.View2DPacked(50, 50, 'test',text_size=8)
+v.show(som, what='codebook', which_dim=[0,1], cmap=None, col_sz=6)
+
+#print("Converting mnist data to binary...")
+#ones = np.where(ones > 0, 1, -1)
+#fives = np.where(fives > 0, 1, -1)
+
