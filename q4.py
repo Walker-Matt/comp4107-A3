@@ -7,26 +7,30 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import KFold
 
 lfw_people = fetch_lfw_people(min_faces_per_person=70, resize=0.4)
-
-# introspect the images arrays to find the shapes (for plotting)
 n_samples, h, w = lfw_people.images.shape
 
-# for machine learning we use the 2 data directly (as relative pixel
-# positions info is ignored by this model)
 X = lfw_people.data
 n_features = X.shape[1]
 
-# the label to predict is the id of the person
 y = lfw_people.target
 target_names = lfw_people.target_names
 n_classes = target_names.shape[0]
 
-# split into a training and testing set using K-fold
+def diff(test, pred):
+    count = 0
+    for i in range(len(test)):
+        if(test[i] == pred[i]):
+            count += 1
+    return count/len(test)
+
 Kfolds = [3,6,9,12,15]
-percentages = []
+PCA_percentages = []
+RAW_percentages = []
 for k in Kfolds:
+    # split into a training and testing set using K-fold
     kf = KFold(n_splits=k)
-    accuracies = []
+    PCA_accuracies = []
+    RAW_accuracies = []
     print("Testing with", k, "folds")
     for train_index, test_index in kf.split(X):
         X_train, X_test = X[train_index], X[test_index]
@@ -42,27 +46,37 @@ for k in Kfolds:
         X_train_pca = pca.transform(X_train)
         X_test_pca = pca.transform(X_test)
         
-        clf = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(n_components), random_state=1)
-        clf = clf.fit(X_train_pca, y_train)
+        #Feed forward neural network with back propagation
+        clf_pca = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(n_components), random_state=1)
+        clf_pca = clf_pca.fit(X_train_pca, y_train)
         
-        y_pred = clf.predict(X_test_pca)
+        y_pred_pca = clf_pca.predict(X_test_pca)
         
-        def diff(test, pred):
-            count = 0
-            for i in range(len(test)):
-                if(test[i] == pred[i]):
-                    count += 1
-            return count/len(test)
+        PCA_accuracy = diff(y_test, y_pred_pca)
+        PCA_accuracies.append(PCA_accuracy)
         
-        accuracy = diff(y_test, y_pred)
-        accuracies.append(accuracy)
-    average_percent = int(sum(accuracies)/k * 100)
-    percentages.append(average_percent)
+        #Testing with raw data
+        clf_raw = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5,2), random_state=1)
+        clf_raw = clf_pca.fit(X_train, y_train)
+        
+        y_pred_raw = clf_pca.predict(X_test)
+        
+        RAW_accuracy = diff(y_test, y_pred_raw)
+        RAW_accuracies.append(RAW_accuracy)
+        
+    PCA_average_percent = int(sum(PCA_accuracies)/k * 100)
+    PCA_percentages.append(PCA_average_percent)
+    
+    RAW_average_percent = int(sum(RAW_accuracies)/k * 100)
+    RAW_percentages.append(RAW_average_percent)
     
 plt.figure()
 figure(num=None, figsize=(8, 6), dpi=80, facecolor='w', edgecolor='k')
-plt.plot(Kfolds,percentages, label = "Measured Data")
-plt.title("K-Folds vs Network Accuracy")
+plt.plot(Kfolds,PCA_percentages, label = "Orthonormal Basis")
+plt.plot(Kfolds,RAW_percentages, label = "Raw Data")
+ax = plt.subplot(1,1,1)
+ax.legend()
+plt.title("Orthonormal Basis vs Raw Data")
 plt.xlabel("K-Folds")
 plt.ylabel("Recognition Percentage (%)")
 plt.grid()
