@@ -39,7 +39,6 @@ else:
         print("Success!")
         mldata = False
        
-
 #Used to display images throughout
 def display(data, label):
     pixels = np.array(data, dtype='uint8')
@@ -58,13 +57,14 @@ labels = mnist['labels']
 
 numImages = 1000
 indices = random.sample(range(len(data)), numImages)
-
 dist = np.array([])
-kVals = np.arange(490,1000,50)
+kVals = np.arange(10,40,1)
+
+c = 16000000
 
 for k in kVals:
     kmeans = KMeans(n_clusters=k, random_state=0).fit(data[indices])
-    dist = np.append(dist,kmeans.inertia_)
+    dist = np.append(dist,kmeans.inertia_ + c*k)
 
 plt.figure()
 figure(num=None, figsize=(8, 6), dpi=80, facecolor='w', edgecolor='k')
@@ -75,9 +75,3 @@ plt.xlabel("K")
 plt.ylabel("Distance")
 plt.grid()
 plt.show()
-
-#### RBG Network
-#def gaussAct(x):
-#    b = 0.5
-#    c = 
-#    return tf.math.exp(-0.5*(x-))
