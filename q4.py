@@ -56,7 +56,7 @@ for k in Kfolds:
         PCA_accuracies.append(PCA_accuracy)
         
         #Testing with raw data
-        clf_raw = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5,2), random_state=1)
+        clf_raw = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(n_components), random_state=1)
         clf_raw = clf_pca.fit(X_train, y_train)
         
         y_pred_raw = clf_pca.predict(X_test)
@@ -73,10 +73,16 @@ for k in Kfolds:
 plt.figure()
 figure(num=None, figsize=(8, 6), dpi=80, facecolor='w', edgecolor='k')
 plt.plot(Kfolds,PCA_percentages, label = "Orthonormal Basis")
+plt.title("Orthonormal Basis Accuracy vs K-Folds")
+plt.xlabel("K-Folds")
+plt.ylabel("Recognition Percentage (%)")
+plt.grid()
+plt.show()
+
+plt.figure()
+figure(num=None, figsize=(8, 6), dpi=80, facecolor='w', edgecolor='k')
 plt.plot(Kfolds,RAW_percentages, label = "Raw Data")
-ax = plt.subplot(1,1,1)
-ax.legend()
-plt.title("Orthonormal Basis vs Raw Data")
+plt.title("Raw Data Accuracy vs K-Folds")
 plt.xlabel("K-Folds")
 plt.ylabel("Recognition Percentage (%)")
 plt.grid()
