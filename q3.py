@@ -4,7 +4,7 @@ import os.path as path
 from sklearn.datasets import fetch_mldata
 from matplotlib.pyplot import figure
 import sompy
-import pandas as pd
+from sklearn.cluster import KMeans
 
 #Getting the raw data from the database
 datafile = "mnist-original.mat"
@@ -53,22 +53,49 @@ ones_labels = mnist["labels"][5923:12664]
 fives_labels = mnist["labels"][30596:36017]
 
 training = np.concatenate((ones,fives))
-
-#fig = plt.figure()
-#plt.plot(training[:,0],training[:,1],'ob',alpha=0.2, markersize=4)
-#fig.set_size_inches(7,7)
-
+np.random.shuffle(training)    #shuffle order of images
+    
+#SOM clustering
 mapsize = [28,28]
 som = sompy.SOMFactory.build(training, mapsize, mask=None, mapshape='planar', 
                              lattice='rect', normalization='var', initialization='pca', 
                              neighborhood='gaussian', training='batch', name='sompy')
 som.train(n_job=1, verbose='info')
 v = sompy.mapview.View2DPacked(50, 50, 'test', text_size=8)
-#v.show(som, what='codebook', which_dim=[0,1], cmap=None, col_sz=6)
 #v.show(som, what='codebook', cmap=None, col_sz=6)
 
-#v = sompy.mapview.View2DPacked(2, 2, 'test',text_size=8)  
 cl = som.cluster(n_clusters=2)
-weights = getattr(som, 'cluster_labels')
-weights.shape = (28,28)
-print(weights)
+SOMcluster = getattr(som, 'cluster_labels')
+SOMcluster.shape = (28,28)
+print(SOMcluster)
+
+#SVD of matrix of images
+U,s,V = np.linalg.svd(training, full_matrices = False)
+s_inv = np.linalg.inv(np.diag(s))
+US = np.matmul(U[0:784,0:2],s_inv[0:2,0:2])
+training2D = np.matmul(training,US)
+
+#computes kmeans to cluster images
+kmeans = KMeans(n_clusters=2, random_state=0).fit(training)
+labelsList = np.ndarray.tolist(kmeans.labels_)
+clusterPoints = []
+
+#identifies which points (images) are in which cluster
+for k in range(2):
+    index = np.asarray([i for i, x in enumerate(labelsList) if x == k])
+    clusterPoints.append(index)
+
+colors = np.zeros(len(training2D))
+colors[clusterPoints[1]] = 1
+training2D = training2D.T
+training2D = 100*training2D
+
+plt.figure()
+figure(num=None, figsize=(8, 6), dpi=80, facecolor='w', edgecolor='k')
+plt.scatter(training2D[0],training2D[1], c=colors)
+title = "2D K-means Plot"
+plt.title(title)
+plt.xlabel("Dim1")
+plt.ylabel("Dim2")
+plt.grid()
+plt.show()
